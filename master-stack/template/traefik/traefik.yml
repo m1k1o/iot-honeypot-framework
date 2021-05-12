@@ -1,0 +1,57 @@
+entryPoints:
+  web:
+    address: ":80"
+    forwardedHeaders:
+      trustedIPs:
+        - "10.0.0.0/8"
+        - "127.0.0.0/8"
+        - "172.16.0.0/12"
+        - "192.168.0.0/16"
+
+  web-secure:
+    address: ":443"
+    forwardedHeaders:
+      trustedIPs:
+        - "10.0.0.0/8"
+        - "127.0.0.0/8"
+        - "172.16.0.0/12"
+        - "192.168.0.0/16"
+
+api:
+  dashboard: true
+
+providers:
+  file:
+    directory: "/config"
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    swarmMode: true
+    network: "ioth_overlay_trafeik"
+    watch: true
+    exposedByDefault: false
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      # email: your@email.com
+      storage: /acme.json
+      httpChallenge:
+        entryPoint: web
+
+accessLog:
+  filePath: "/logs/error.log"
+  bufferingSize: 100
+  filters:    
+    statusCodes:
+      - "500-599"
+    retryAttempts: true
+    minDuration: "10ms"
+
+metrics:
+  prometheus:
+    entryPoint: "traefik"
+    buckets:
+      - 0.1
+      - 0.3
+      - 1.2
+      - 5.0

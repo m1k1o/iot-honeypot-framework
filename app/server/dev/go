@@ -1,0 +1,16 @@
+#!/bin/sh
+cd "$(dirname "$0")"
+
+docker run -it \
+    --name "ioth_server_dev" \
+    --entrypoint="go" \
+    --volume "${PWD}/../:/app" \
+    ioth_server_img "$@";
+
+#
+# commit changes to image
+docker commit "ioth_server_dev" "ioth_server_img"
+
+#
+# remove contianer
+docker rm "ioth_server_dev"

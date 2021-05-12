@@ -1,0 +1,43 @@
+version: "3.7"
+
+networks:
+  default:
+    driver: "overlay"
+    name: "ioth_overlay_app"
+    attachable: true
+  traefik:
+    external: true
+    name: "ioth_overlay_trafeik"
+
+services:
+  app:
+    image: "ioth-registry:5000/ioth-manager:latest"
+    networks:
+      - "default"
+      - "traefik"
+    environment:
+      - "DOCKER_API_VERSION=1.39"
+      - "IOTH_FLUENTD=${INTERNAL_BIND_IP}:24224"
+      - "IOTH_OVERLAY_NETWORK=ioth_overlay_app"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    deploy:
+      mode: "replicated"
+      replicas: 1
+      restart_policy:
+        condition: "on-failure"
+      placement:
+        constraints:
+          - "node.role == manager"
+      resources:
+        limits:
+          memory: "128M"
+        reservations:
+          memory: "64M"
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.services.ioth-app-frontend.loadbalancer.server.port=8080"
+        - "traefik.http.routers.ioth-app.rule=Host(`${DOMAIN_NAME}`)"
+        - "traefik.http.routers.ioth-app.entrypoints=web-secure"
+        - "traefik.http.routers.ioth-app.tls.certresolver=letsencrypt"
+        - "traefik.http.routers.ioth-app.middlewares=authelia@docker"

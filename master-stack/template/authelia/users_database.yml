@@ -1,0 +1,8 @@
+users:
+  admin:
+    displayname: "Administrator"
+    password: "<PASSWORD>"
+    email: admin@example.com
+    groups:
+      - admins
+      - dev

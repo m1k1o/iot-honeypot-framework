@@ -1,0 +1,10 @@
+#!/bin/sh
+cd "$(dirname "$0")"
+
+# start client serve
+docker run --rm -it \
+    -e 'API_SERVER=http://iot-manager.m1k1o.net:8080/' \
+    -v ${PWD}/../src:/app/src \
+    -p 8081:8080 \
+    --entrypoint="npm" \
+    ioth_client_img run serve;

@@ -1,0 +1,7 @@
+#!/bin/sh
+cd "$(dirname "$0")"
+
+docker run --rm -it \
+    --volume "${PWD}/../:/app" \
+    --entrypoint="/bin/bash" \
+    ioth_server_img -c '[ -f ./bin/golangci-lint ] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.31.0;./bin/golangci-lint run';

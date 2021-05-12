@@ -1,0 +1,73 @@
+version: "3.7"
+
+networks:
+  default:
+    driver: "overlay"
+    name: "ioth_overlay_logs"
+    attachable: true
+  traefik:
+    external: true
+    name: "ioth_overlay_trafeik"
+
+services:
+  elasticsearch:
+    image: "docker.elastic.co/elasticsearch/elasticsearch-oss:${ELASTICSEARCH_VERSION}"
+    environment:
+      - "TZ"
+      - "cluster.name=es-cluster"
+      - "discovery.zen.minimum_master_nodes=1"
+      - "discovery.zen.ping.unicast.hosts=elasticsearch"
+      - "node.master=true"
+      - "node.data=true"
+      - "node.ingest=true"
+      - "node.name=es-node.ioth.master-node"
+      - "LOGSPOUT=ignore"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - "./data/elasticsearch:/usr/share/elasticsearch/data"
+    deploy:
+      mode: "replicated"
+      replicas: 1
+      restart_policy:
+        condition: "on-failure"
+      placement:
+        constraints:
+          - "node.role == manager"
+      resources:
+        limits:
+          memory: "2048M"
+        reservations:
+          memory: "1024M"
+
+  kibana:
+    image: "docker.elastic.co/kibana/kibana-oss:${ELASTICSEARCH_VERSION}"
+    environment:
+      - "TZ"
+      - "SERVER_NAME=kibana.${DOMAIN_NAME}"
+      - "ELASTICSEARCH_URL=http://elasticsearch:9200"
+      - "ELASTICSEARCH_HOSTS=http://elasticsearch:9200"
+    networks:
+      - "default"
+      - "traefik"
+    deploy:
+      mode: "replicated"
+      replicas: 1
+      restart_policy:
+        condition: "on-failure"
+      placement:
+        constraints:
+          - "node.role == manager"
+      resources:
+        limits:
+          memory: "512M"
+        reservations:
+          memory: "256M"
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.services.kibana-frontend.loadbalancer.server.port=5601"
+        - "traefik.http.routers.kibana.rule=Host(`kibana.${DOMAIN_NAME}`)"
+        - "traefik.http.routers.kibana.entrypoints=web-secure"
+        - "traefik.http.routers.kibana.tls.certresolver=letsencrypt"
+        - "traefik.http.routers.kibana.middlewares=authelia@docker"
+
+# source: https://github.com/bekkerstacks/elasticsearch-fluentd-kibana

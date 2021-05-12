@@ -1,0 +1,123 @@
+{
+  "index.php":{
+    "actions": [
+      "sleep",
+      "servefile"
+    ],
+    "sleep":{
+      "duration": 2
+    },
+    "servefile":{
+      "file": "/ugly/index.html",
+      "render_template": true
+    },
+    "headers": {
+      "Server": "lighttpd",
+      "X-Powered-By": "PHP/5.3.7"
+    }
+  },
+  "":{
+    "actions": [
+      "sleep",
+      "servefile"
+    ],
+    "sleep":{
+      "duration": 2
+    },
+    "servefile":{
+      "file": "/ugly/index.html",
+      "render_template": true
+    },
+    "headers": {
+      "Server": "lighttpd",
+      "X-Powered-By": "PHP/5.3.7"
+    }
+  },
+  "login.php":{
+    "actions": [
+      "sleep",
+      "servefile"
+    ],
+    "sleep":{
+      "duration": 1
+    },
+    "servefile":{
+      "file": "/ugly/login.html",
+      "render_template": true
+    },
+    "headers": {
+      "Server": "lighttpd",
+      "X-Powered-By": "PHP/5.3.7"
+    }
+  },
+  "admin.php":{
+    "actions": [
+      "sleep",
+      "authorize",
+      "servefile"
+    ],
+    "authorize": {
+      "username": "username",
+      "password": "password"
+    },
+    "sleep":{
+      "duration": 2
+    },
+    "servefile":{
+      "file": "/ugly/admin.html",
+      "render_template": true
+    },
+    "headers": {
+      "Server": "lighttpd",
+      "X-Powered-By": "PHP/5.3.7"
+    }
+  },
+  "update.php":{
+    "actions": [
+      "sleep",
+      "catchfile",
+      "servefile"
+    ],
+    "sleep":{
+      "duration": 5
+    },
+    "servefile":{
+      "file": "/ugly/update.html",
+      "render_template": true
+    },
+    "headers": {
+      "Server": "lighttpd",
+      "X-Powered-By": "PHP/5.3.7"
+    }
+  },
+  "jquery.min.js":{
+    "actions": [
+      "servefile"
+    ],
+    "servefile":{
+      "file": "templates/ugly/jquery.min.js"
+    },
+    "headers": {
+      "Server": "lighttpd"
+    }
+  },
+  "cgi-bin/image.pl": {
+    "actions": [
+      "sleep",
+      "servefile"
+    ],
+    "sleep":{
+      "duration": 1
+    },
+    "servefile":{
+      "file": [
+        "templates/ugly/images/0.jpg",
+        "templates/ugly/images/1.jpg"
+      ],
+      "watermark": true
+    },
+    "headers": {
+      "Server": "RTSP-Stream"
+    }
+  }
+}

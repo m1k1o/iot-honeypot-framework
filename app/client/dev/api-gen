@@ -1,0 +1,19 @@
+#!/bin/bash
+VERSION="1.0.0"
+
+rm -rf ../src/api
+mkdir ../src/api
+
+docker run --rm \
+    --user "$(id -u):$(id -g)" \
+    -v "${PWD}/../src/api:/local/out" \
+    openapitools/openapi-generator-cli generate \
+        -i https://api.swaggerhub.com/apis/m1k1o/iot-honeypot/${VERSION}/swagger.yaml \
+        -g typescript-fetch \
+        -o /local/out \
+        --additional-properties=useSingleRequestParameter=false,modelPropertyNaming=camelCase
+
+# https://devblogs.microsoft.com/typescript/announcing-typescript-3-6/
+# GlobalFetch is gone. Instead, use WindowOrWorkerGlobalScope
+sed -i 's/GlobalFetch/WindowOrWorkerGlobalScope/' "${PWD}/../src/api/runtime.ts"
+

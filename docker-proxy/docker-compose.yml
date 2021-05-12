@@ -1,0 +1,18 @@
+version: "3.7"
+
+services:
+  docker-proxy:
+    build: "./"
+    container_name: "docker-proxy"
+    environment:
+      HOST: "test"
+      PORTS: |
+        tcp 80 8111
+      CAPTURE: "1"
+    volumes:
+      - "./capture:/var/log/capture"
+    ports:
+      - "8111:80"
+
+  test:
+    image: "httpd:2.4"

@@ -1,0 +1,178 @@
+version: "3.7"
+
+networks:
+  default:
+    driver: "overlay"
+    name: "ioth_overlay_grafana"
+    attachable: true
+  traefik:
+    external: true
+    name: "ioth_overlay_trafeik"
+
+configs:
+  dockerd_config:
+    file: "./dockerd-exporter/Caddyfile"
+
+services:
+  dockerd-exporter:
+    image: "caddy"
+    environment:
+      - "DOCKER_GWBRIDGE_IP=172.18.0.1"
+    configs:
+      - source: "dockerd_config"
+        target: "/etc/caddy/Caddyfile"
+    deploy:
+      mode: "global"
+      resources:
+        limits:
+          memory: "128M"
+        reservations:
+          memory: "64M"
+
+  cadvisor:
+    image: "google/cadvisor"
+    command: "-logtostderr -docker_only"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "/:/rootfs:ro"
+      - "/var/run:/var/run"
+      - "/sys:/sys:ro"
+      - "/var/lib/docker/:/var/lib/docker:ro"
+    deploy:
+      mode: "global"
+      resources:
+        limits:
+          memory: "128M"
+        reservations:
+          memory: "64M"
+
+  node-exporter:
+    image: "prom/node-exporter"
+    environment:
+      - "NODE_ID={{.Node.ID}}"
+    volumes:
+      - "/proc:/host/proc:ro"
+      - "/sys:/host/sys:ro"
+      - "/:/rootfs:ro"
+      - "/etc/hostname:/etc/nodename"
+    entrypoint: "/bin/sh"
+    command: |
+      -c '
+        NODE_NAME=$$(cat /etc/nodename);
+        echo "node_meta{node_id=\"$$NODE_ID\", container_label_com_docker_swarm_node_id=\"$$NODE_ID\", node_name=\"$$NODE_NAME\"} 1" > /etc/node-exporter/node-meta.prom;
+        /bin/node_exporter
+          --path.procfs=/host/proc
+          --path.sysfs=/host/sys
+          --path.rootfs=/rootfs
+          --collector.textfile.directory=/etc/node-exporter/
+          --collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$$$|/)
+          --no-collector.ipvs
+      '
+    deploy:
+      mode: "global"
+      resources:
+        limits:
+          memory: "128M"
+        reservations:
+          memory: "64M"
+
+  alertmanager:
+    image: "prom/alertmanager"
+    networks:
+      - "default"
+      - "traefik"
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    volumes:
+      - "./data/alertmanager/data:/alertmanager"
+      - "./data/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml"
+    user: "$UID"
+    deploy:
+      mode: "replicated"
+      replicas: 1
+      placement:
+        constraints:
+          - "node.role == manager"
+      resources:
+        limits:
+          memory: "128M"
+        reservations:
+          memory: "64M"
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.services.alertmanager-frontend.loadbalancer.server.port=9093"
+        - "traefik.http.routers.alertmanager.rule=Host(`alertmanager.${DOMAIN_NAME}`)"
+        - "traefik.http.routers.alertmanager.entrypoints=web-secure"
+        - "traefik.http.routers.alertmanager.tls.certresolver=letsencrypt"
+        - "traefik.http.routers.alertmanager.middlewares=authelia@docker"
+
+  prometheus:
+    image: "prom/prometheus"
+    networks:
+      - "default"
+      - "traefik"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention=${PROMETHEUS_RETENTION:-24h}'
+    volumes:
+      - "./data/prometheus/data:/prometheus"
+      - "./data/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml"
+      - "./data/prometheus/swarm_node.rules.yml:/etc/prometheus/swarm_node.rules.yml"
+      - "./data/prometheus/swarm_task.rules.yml:/etc/prometheus/swarm_task.rules.yml"
+    user: "$UID"
+    deploy:
+      mode: "replicated"
+      replicas: 1
+      placement:
+        constraints:
+          - "node.role == manager"
+      resources:
+        limits:
+          memory: "256M"
+        reservations:
+          memory: "128M"
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.services.prometheus-frontend.loadbalancer.server.port=9090"
+        - "traefik.http.routers.prometheus.rule=Host(`prometheus.${DOMAIN_NAME}`)"
+        - "traefik.http.routers.prometheus.entrypoints=web-secure"
+        - "traefik.http.routers.prometheus.tls.certresolver=letsencrypt"
+        - "traefik.http.routers.prometheus.middlewares=authelia@docker"
+
+  grafana:
+    image: "grafana/grafana"
+    networks:
+      - "default"
+      - "traefik"
+    environment:
+      - "GF_AUTH_PROXY_ENABLED=true"
+      - "GF_AUTH_PROXY_HEADER_NAME=X-WEBAUTH-USER"
+      - "GF_AUTH_PROXY_HEADER_PROPERTY=username"
+      - "GF_AUTH_PROXY_AUTO_SIGNUP=true"
+    volumes:
+      - "./data/grafana/data:/var/lib/grafana"
+      - "./data/grafana/dashboards:/etc/grafana/dashboards/"
+      - "./data/grafana/datasources:/etc/grafana/provisioning/datasources/"
+      - "./data/grafana/swarmprom_dashboards.yml:/etc/grafana/provisioning/dashboards/swarmprom_dashboards.yml"
+    user: "$UID"
+    deploy:
+      mode: "replicated"
+      replicas: 1
+      placement:
+        constraints:
+          - "node.role == manager"
+      resources:
+        limits:
+          memory: "128M"
+        reservations:
+          memory: "64M"
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.services.grafana-frontend.loadbalancer.server.port=3000"
+        - "traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN_NAME}`)"
+        - "traefik.http.routers.grafana.entrypoints=web-secure"
+        - "traefik.http.routers.grafana.tls.certresolver=letsencrypt"
+        - "traefik.http.middlewares.grafanaLogin.headers.customrequestheaders.X-WEBAUTH-USER=admin"
+        - "traefik.http.routers.grafana.middlewares=grafanaLogin,authelia@docker"

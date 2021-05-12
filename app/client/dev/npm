@@ -1,0 +1,21 @@
+#!/bin/sh
+cd "$(dirname "$0")"
+
+# start client watch
+docker run -it \
+    --name "ioth_client_dev" \
+    --entrypoint="npm" \
+    ioth_client_img "$@";
+
+#
+# copy package files
+docker cp ioth_client_dev:/app/package.json "${PWD}/../package.json"
+docker cp ioth_client_dev:/app/package-lock.json "${PWD}/../package-lock.json"
+
+#
+# commit changes to image
+docker commit "ioth_client_dev" "ioth_client_img"
+
+#
+# remove contianer
+docker rm "ioth_client_dev"

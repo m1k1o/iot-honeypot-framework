@@ -1,0 +1,376 @@
+openapi: 3.0.0
+servers:
+  # Added by API Auto Mocking Plugin
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/m1k1o/iot-honeypot/1.0.0
+info:
+  description: |
+    IoT Honeypot API
+  version: "1.0.0"
+  title: IoT Honeypot API
+  contact:
+    email: xsedivy@stuba.sk
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+tags:
+  - name: services
+    description: Honeypots defined as swarm services.
+  - name: proxies
+    description: Services published via proxies from ingress network.
+  - name: nodes
+    description: Available swarm nodes.
+paths:
+  /services:
+    get:
+      tags:
+        - services
+      summary: List of all services.
+      operationId: servicesList
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ServiceSpec'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+    post:
+      tags:
+        - services
+      summary: Create new service.
+      operationId: serviceCreate
+      responses:
+        '200':
+          description: New service Id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceId'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceSpec'
+        required: true
+  /services/{serviceId}:
+    delete:
+      tags:
+        - services
+      summary: Remove service.
+      operationId: serviceRemove
+      parameters:
+        - in: path
+          name: serviceId
+          description: unique Id of service
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Successfully removed.
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /proxies:
+    get:
+      tags:
+        - proxies
+      summary: List of all proxies.
+      operationId: proxiesList
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProxySpec'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+    post:
+      tags:
+        - proxies
+      summary: Create new proxy.
+      operationId: proxyCreate
+      responses:
+        '200':
+          description: New proxy Id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProxyId'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProxySpec'
+        required: true
+  /proxies/{proxyId}:
+    delete:
+      tags:
+        - proxies
+      summary: Remove proxy.
+      operationId: proxyRemove
+      parameters:
+        - in: path
+          name: proxyId
+          description: unique Id of proxy
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Successfully removed.
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /nodes:
+    get:
+      tags:
+        - nodes
+      summary: List of all nodes.
+      operationId: nodesList
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NodeSpec'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+    post:
+      tags:
+        - nodes
+      summary: Join with new node.
+      operationId: nodeJoin
+      responses:
+        '200':
+          description: Join token and address.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeJoin'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+  /nodes/{nodeId}:
+    delete:
+      tags:
+        - nodes
+      summary: Remove node.
+      operationId: nodeRemove
+      parameters:
+        - in: path
+          name: nodeId
+          description: unique Id of node
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Successfully removed.
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+components:
+  responses:
+    ErrorResponse:
+      description: Error message response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessage'
+
+  schemas:
+    ErrorMessage:
+      type: object
+      properties:
+        message:
+          type: string
+
+
+    ###
+    # SERVICES
+    ###
+
+    ServiceId:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 89m6xvgmydidg0fnwhvtwaa8m
+
+    ServiceSpec:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        container_spec:
+          $ref: '#/components/schemas/ContainerSpec'
+        replicas:
+          type: integer
+          format: uint64
+        status:
+          $ref: '#/components/schemas/ServiceStatus'
+
+    ContainerSpec:
+      type: object
+      properties:
+        image:
+          type: string
+        cmd:
+          type: array
+          items:
+            type: string
+        args:
+          type: array
+          items:
+            type: string
+        hostname:
+          type: string
+        env:
+          type: array
+          items:
+            type: string
+        dir:
+          type: string
+
+    ServiceStatus:
+      type: object
+      properties:
+        running:
+          type: integer
+          format: uint64
+        desired:
+          type: integer
+          format: uint64
+
+    ###
+    # PROXIES
+    ###
+
+    ProxyId:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 89m6xvgmydidg0fnwhvtwaa8m
+
+    ProxySpec:
+      type: object
+      properties:
+        id:
+          type: string
+          example: czfhyftql4rqq25jnfkxv56g4
+        service:
+          type: string
+          example: ssh-honeypot
+        node:
+          type: string
+          example: iothp-worker
+        ports:
+          type: array
+          items:
+            $ref: '#/components/schemas/PortConfig'
+        running:
+          type: boolean
+          example: true
+
+    PortConfig:
+      type: object
+      properties:
+        protocol:
+          type: string
+          enum: [tcp, udp]
+          example: tcp
+        target_port:
+          type: integer
+          description: Target port is the port inside the container
+          format: uint32
+          example: 80
+        published_port:
+          type: integer
+          description: Published port is the port on the swarm hosts
+          format: uint32
+          example: 8080
+
+    ###
+    # NODES
+    ###
+
+    NodeSpec:
+      type: object
+      properties:
+        id:
+          type: string
+          example: f4l1h1iv8f6b079f1o2qn2ecx
+        role:
+          type: string
+          enum: [worker, manager]
+          example: manager
+        hostname:
+          type: string
+          example: iothp-manager
+        platform:
+          $ref: '#/components/schemas/Platform'
+        resources:
+          $ref: '#/components/schemas/Resources'
+        status:
+          $ref: '#/components/schemas/NodeStatus'
+
+    NodeStatus:
+      type: object
+      properties:
+        addr:
+          type: string
+          format: ip-address
+          example: 10.8.0.1
+        state:
+          type: string
+          enum: [unknown, down, ready, disconnected]
+          example: ready
+
+    Resources:
+      type: object
+      properties:
+        nano_cpus:
+          type: integer
+          format: int64
+          example: 4000000000
+        memory_bytes:
+          type: integer
+          format: int64
+          example: 4135706624
+
+    Platform:
+      type: object
+      properties:
+        architecture:
+          type: string
+          example: x86_64
+        os:
+          type: string
+          example: linux
+
+    NodeJoin:
+      type: object
+      properties:
+        token:
+          type: string
+          example: yxfbdfghdth
+        addr:
+          type: string
+          example: "10.8.0.1:2377"

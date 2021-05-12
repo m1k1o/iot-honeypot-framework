@@ -1,0 +1,11 @@
+#!/bin/sh
+cd "$(dirname "$0")"
+
+docker run --rm -it \
+    --name "ioth_server" \
+    -p "8080:8080" \
+    -v "${PWD}/../:/app" \
+    -e 'DOCKER_API_VERSION=1.39' \
+    -v "/var/run/docker.sock:/var/run/docker.sock" \
+    --entrypoint="./bin/ioth" \
+    ioth_server_img serve --bind :8080;

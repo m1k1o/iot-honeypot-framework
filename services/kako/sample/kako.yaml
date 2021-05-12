@@ -1,0 +1,14 @@
+logging:
+  path: '/proc/1/fd/2'
+
+simulations:
+  path: './sample/simulations/'
+
+results:
+  processor: file
+  attributes:
+    path: '/proc/1/fd/1'
+
+monitoring:
+  enabled: True
+  interval: 60

@@ -1,0 +1,19 @@
+language: python
+python:
+  - "3.6"
+  - "3.6-dev"  # 3.6 development branch
+  - "3.7-dev"  # 3.7 development branch
+  - "nightly"
+# command to install dependencies
+install:
+  - pip install -r requirements.txt
+  - pip install pylint
+# command to run tests
+script:
+  - python ./main.py init
+  - python ./tests/ConfigTestCase.py
+  - python ./tests/LogTestCase.py
+  - python ./tests/HTTPTestCase.py
+  - python ./tests/AuthTestCase.py
+  - python -m pylint ./core/*.py  || exit 0
+  - python -m pylint ./core/actions/*.py  || exit 0
