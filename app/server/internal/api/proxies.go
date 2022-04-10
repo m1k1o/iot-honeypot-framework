@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -10,7 +9,6 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/swarm"
-	"github.com/docker/docker/client"
 	"github.com/go-chi/chi"
 
 	"m1k1o/ioth/internal/utils"
@@ -64,13 +62,8 @@ type ProxySpec struct {
 func (a *ApiManagerCtx) proxies() *chi.Mux {
 	r := chi.NewRouter()
 
-	cli, err := client.NewEnvClient()
-	if err != nil {
-		panic(err)
-	}
-
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		servicesList, err := utils.GetServiceListWithStatus(context.Background(), cli)
+		servicesList, err := utils.GetServiceListWithStatus(r.Context(), a.cli)
 		if err != nil {
 			utils.HttpInternalServer(w, err)
 			return
@@ -228,7 +221,7 @@ func (a *ApiManagerCtx) proxies() *chi.Mux {
 			EndpointSpec: EndpointSpec,
 		}
 
-		ServiceCreateResponse, err := cli.ServiceCreate(context.Background(), service, types.ServiceCreateOptions{})
+		ServiceCreateResponse, err := a.cli.ServiceCreate(r.Context(), service, types.ServiceCreateOptions{})
 		if err != nil {
 			utils.HttpInternalServer(w, err)
 			return
@@ -241,7 +234,7 @@ func (a *ApiManagerCtx) proxies() *chi.Mux {
 	r.Delete("/{id}", func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 
-		service, _, err := cli.ServiceInspectWithRaw(context.Background(), id, types.ServiceInspectOptions{})
+		service, _, err := a.cli.ServiceInspectWithRaw(r.Context(), id, types.ServiceInspectOptions{})
 		if err != nil {
 			utils.HttpBadRequest(w, err)
 			return
@@ -253,7 +246,7 @@ func (a *ApiManagerCtx) proxies() *chi.Mux {
 			return
 		}
 
-		if err := cli.ServiceRemove(context.Background(), id); err != nil {
+		if err := a.cli.ServiceRemove(r.Context(), id); err != nil {
 			utils.HttpInternalServer(w, err)
 			return
 		}

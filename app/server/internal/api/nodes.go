@@ -1,12 +1,10 @@
 package api
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/swarm"
-	"github.com/docker/docker/client"
 	"github.com/go-chi/chi"
 
 	"m1k1o/ioth/internal/utils"
@@ -44,13 +42,8 @@ type NodeJoin struct {
 func (a *ApiManagerCtx) nodes() *chi.Mux {
 	r := chi.NewRouter()
 
-	cli, err := client.NewEnvClient()
-	if err != nil {
-		panic(err)
-	}
-
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		swarmNodes, err := cli.NodeList(context.Background(), types.NodeListOptions{})
+		swarmNodes, err := a.cli.NodeList(r.Context(), types.NodeListOptions{})
 		if err != nil {
 			utils.HttpInternalServer(w, err)
 			return
@@ -83,13 +76,13 @@ func (a *ApiManagerCtx) nodes() *chi.Mux {
 	const rotateTokens = true
 	r.Post("/", func(w http.ResponseWriter, r *http.Request) {
 		if rotateTokens {
-			sw, err := cli.SwarmInspect(context.Background())
+			sw, err := a.cli.SwarmInspect(r.Context())
 			if err != nil {
 				utils.HttpInternalServer(w, err)
 				return
 			}
 
-			if err := cli.SwarmUpdate(context.Background(), sw.Version, sw.Spec, swarm.UpdateFlags{
+			if err := a.cli.SwarmUpdate(r.Context(), sw.Version, sw.Spec, swarm.UpdateFlags{
 				RotateWorkerToken: true,
 			}); err != nil {
 				utils.HttpInternalServer(w, err)
@@ -98,21 +91,21 @@ func (a *ApiManagerCtx) nodes() *chi.Mux {
 		}
 
 		// get token
-		sw, err := cli.SwarmInspect(context.Background())
+		sw, err := a.cli.SwarmInspect(r.Context())
 		if err != nil {
 			utils.HttpInternalServer(w, err)
 			return
 		}
 
 		// get node id
-		info, err := cli.Info(context.Background())
+		info, err := a.cli.Info(r.Context())
 		if err != nil {
 			utils.HttpInternalServer(w, err)
 			return
 		}
 
 		// get manager addr
-		node, _, err := cli.NodeInspectWithRaw(context.Background(), info.Swarm.NodeID)
+		node, _, err := a.cli.NodeInspectWithRaw(r.Context(), info.Swarm.NodeID)
 		if err != nil {
 			utils.HttpInternalServer(w, err)
 			return
@@ -127,7 +120,7 @@ func (a *ApiManagerCtx) nodes() *chi.Mux {
 	r.Delete("/{id}", func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 
-		err := cli.NodeRemove(context.Background(), id, types.NodeRemoveOptions{Force: true})
+		err := a.cli.NodeRemove(r.Context(), id, types.NodeRemoveOptions{Force: true})
 		if err != nil {
 			utils.HttpInternalServer(w, err)
 			return

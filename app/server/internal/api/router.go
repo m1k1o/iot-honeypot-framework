@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -19,12 +18,19 @@ import (
 type ApiManagerCtx struct {
 	logger zerolog.Logger
 	conf   *config.API
+	cli    *client.Client
 }
 
 func New(conf *config.API) *ApiManagerCtx {
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		panic(err)
+	}
+
 	return &ApiManagerCtx{
 		logger: log.With().Str("module", "router").Logger(),
 		conf:   conf,
+		cli:    cli,
 	}
 }
 
@@ -34,14 +40,9 @@ func (a *ApiManagerCtx) Mount(r chi.Router) {
 	r.Mount("/services", a.services())
 	r.Mount("/proxies", a.proxies())
 
-	cli, err := client.NewEnvClient()
-	if err != nil {
-		panic(err)
-	}
-
 	r.Get("/images", func(w http.ResponseWriter, r *http.Request) {
 		// List all images available locally
-		images, err := cli.ImageList(context.Background(), types.ImageListOptions{})
+		images, err := a.cli.ImageList(r.Context(), types.ImageListOptions{})
 		if err != nil {
 			utils.HttpInternalServer(w, err)
 			return
@@ -53,7 +54,7 @@ func (a *ApiManagerCtx) Mount(r chi.Router) {
 
 	r.Get("/containers", func(w http.ResponseWriter, r *http.Request) {
 		// Retrieve a list of containers
-		containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{})
+		containers, err := a.cli.ContainerList(r.Context(), types.ContainerListOptions{})
 		if err != nil {
 			utils.HttpInternalServer(w, err)
 			return
@@ -65,7 +66,7 @@ func (a *ApiManagerCtx) Mount(r chi.Router) {
 
 	r.Get("/networks", func(w http.ResponseWriter, r *http.Request) {
 		// List all networks
-		networks, err := cli.NetworkList(context.Background(), types.NetworkListOptions{})
+		networks, err := a.cli.NetworkList(r.Context(), types.NetworkListOptions{})
 		if err != nil {
 			utils.HttpInternalServer(w, err)
 			return
