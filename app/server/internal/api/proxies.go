@@ -59,9 +59,7 @@ type ProxySpec struct {
 	Running bool         `json:"running"`
 }
 
-func (a *ApiManagerCtx) proxies() *chi.Mux {
-	r := chi.NewRouter()
-
+func (a *ApiManagerCtx) proxies(r chi.Router) {
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		servicesList, err := utils.GetServiceListWithStatus(r.Context(), a.cli)
 		if err != nil {
@@ -253,6 +251,4 @@ func (a *ApiManagerCtx) proxies() *chi.Mux {
 
 		utils.HttpSuccess(w)
 	})
-
-	return r
 }

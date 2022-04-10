@@ -39,9 +39,7 @@ type NodeJoin struct {
 	Addr  string `json:"addr,omitempty"`
 }
 
-func (a *ApiManagerCtx) nodes() *chi.Mux {
-	r := chi.NewRouter()
-
+func (a *ApiManagerCtx) nodes(r chi.Router) {
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		swarmNodes, err := a.cli.NodeList(r.Context(), types.NodeListOptions{})
 		if err != nil {
@@ -128,8 +126,6 @@ func (a *ApiManagerCtx) nodes() *chi.Mux {
 
 		utils.HttpSuccess(w)
 	})
-
-	return r
 }
 
 /*

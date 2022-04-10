@@ -35,10 +35,10 @@ func New(conf *config.API) *ApiManagerCtx {
 }
 
 func (a *ApiManagerCtx) Mount(r chi.Router) {
-	// Register
-	r.Mount("/nodes", a.nodes())
-	r.Mount("/services", a.services())
-	r.Mount("/proxies", a.proxies())
+	// Register routes
+	r.Route("/nodes", a.nodes)
+	r.Route("/services", a.services)
+	r.Route("/proxies", a.proxies)
 
 	r.Get("/images", func(w http.ResponseWriter, r *http.Request) {
 		// List all images available locally

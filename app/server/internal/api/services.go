@@ -32,9 +32,7 @@ type ServiceSpec struct {
 	Status        ServiceStatus `json:"status,omitempty"`
 }
 
-func (a *ApiManagerCtx) services() *chi.Mux {
-	r := chi.NewRouter()
-
+func (a *ApiManagerCtx) services(r chi.Router) {
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		servicesList, err := utils.GetServiceListWithStatus(r.Context(), a.cli)
 		if err != nil {
@@ -252,8 +250,6 @@ func (a *ApiManagerCtx) services() *chi.Mux {
 
 		utils.HttpSuccess(w)
 	})
-
-	return r
 }
 
 /*
